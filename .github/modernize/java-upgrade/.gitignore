@@ -1,0 +1,16 @@
+@"
+.env
+.env.*
+!.env.example
+
+**/target/
+*.class
+
+.idea/
+.vscode/
+
+*.log
+"@ | Set-Content -Encoding ascii .gitignore
+
+application.properties
+application.yml

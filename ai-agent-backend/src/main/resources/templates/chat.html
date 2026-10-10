@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${appName != null ? appName + ' | ' + appTagline : 'Aura Concierge | Classic AI Assistant'}">Aura Concierge | Classic AI Assistant</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%220%22%20%22100%22%20%22100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+
+    <!-- Google Fonts & Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/chat.css}">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        stone: {
+                            850: '#141c28',
+                            950: '#090d16',
+                        },
+                        amber: {
+                            350: '#fcd34d',
+                            450: '#f59e0b',
+                            550: '#d97706',
+                        }
+                    },
+                    boxShadow: {
+                        'gold': '0 0 25px -4px rgba(245, 158, 11, 0.25)',
+                        'gold-lg': '0 0 40px -6px rgba(245, 158, 11, 0.35)',
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- Marked.js for Elegant Markdown Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+</head>
+<body class="bg-[#090d16] text-stone-100 min-h-screen flex h-screen overflow-hidden selection:bg-amber-500/30 selection:text-amber-200">
+
+    <!-- Ambient Luxury Background Illumination -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-amber-600/10 rounded-full blur-[130px]"></div>
+        <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px]"></div>
+        <div class="absolute top-1/2 left-1/3 -translate-y-1/2 w-80 h-80 bg-amber-500/5 rounded-full blur-[150px]"></div>
+    </div>
+
+    <!-- Mobile Drawer Backdrop -->
+    <div id="sidebarBackdrop" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 hidden md:hidden transition-opacity"></div>
+
+    <!-- ===================================================================== -->
+    <!-- SIDEBAR NAVIGATION & HISTORY -->
+    <!-- ===================================================================== -->
+    <aside id="sidebarDrawer" class="fixed md:static inset-y-0 left-0 z-40 w-72 md:w-80 flex flex-col bg-[#0d131f]/95 md:bg-[#0c121e]/85 backdrop-blur-xl border-r border-stone-800/80 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+        
+        <!-- Sidebar Brand Header -->
+        <div class="p-5 border-b border-stone-800/70 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-600 flex items-center justify-center shadow-md shadow-amber-500/20 aura-jewel">
+                    <svg class="w-5 h-5 text-stone-950" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-display-emblem font-bold text-base tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500" th:text="${appName != null ? appName : 'AURA'}">AURA</h1>
+                    <p class="text-[10px] uppercase tracking-wider text-stone-400 font-medium">Concierge & Travel Agent</p>
+                </div>
+            </div>
+
+            <!-- Close button for mobile -->
+            <button id="btnCloseSidebarMobile" class="md:hidden text-stone-400 hover:text-stone-200 p-1.5 rounded-lg hover:bg-stone-800/60" aria-label="Close sidebar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- New Chat Button -->
+        <div class="p-4">
+            <button id="btnNewChat" class="w-full flex items-center justify-center space-x-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-amber-400/15 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-amber-200 hover:text-amber-100 font-medium text-sm transition-all duration-200 shadow-sm hover:shadow-gold-subtle group">
+                <svg class="w-4 h-4 text-amber-400 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span>New Conversation</span>
+            </button>
+        </div>
+
+        <!-- Conversations History List -->
+        <div class="flex-1 overflow-y-auto px-3 py-1 space-y-1">
+            <div class="px-2 py-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+                <span>Recent Journeys</span>
+            </div>
+            <div id="sessionListContainer" class="space-y-1">
+                <!-- Injected via chat.js -->
+            </div>
+        </div>
+
+        <!-- Capabilities & Tool Badges Footer -->
+        <div class="p-4 border-t border-stone-800/70 bg-[#090d16]/60">
+            <div class="rounded-xl p-3 bg-stone-900/60 border border-stone-800/80 text-xs space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-stone-400 text-[11px] uppercase tracking-wider font-semibold">Active Model</span>
+                    <span class="flex items-center space-x-1 text-emerald-400 text-[11px] font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span th:text="${modelName != null ? modelName : 'Gemini 3.8 Flash'}">Gemini 3.8 Flash</span>
+                    </span>
+                </div>
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    <span class="px-2 py-0.5 rounded-md bg-stone-800/80 text-stone-300 text-[10px] border border-stone-700/50">📦 Order Tools</span>
+                    <span class="px-2 py-0.5 rounded-md bg-stone-800/80 text-stone-300 text-[10px] border border-stone-700/50">✈️ Travel Agent</span>
+                    <span class="px-2 py-0.5 rounded-md bg-stone-800/80 text-stone-300 text-[10px] border border-stone-700/50">⚡ Spring AI</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===================================================================== -->
+    <!-- MAIN CHAT INTERFACE -->
+    <!-- ===================================================================== -->
+    <main class="flex-1 flex flex-col h-full relative z-10 overflow-hidden bg-gradient-to-b from-[#090d16] via-[#0b101c] to-[#090d16]">
+        
+        <!-- Top Navigation Bar -->
+        <header class="h-16 px-4 md:px-7 flex items-center justify-between border-b border-stone-800/80 glass-panel z-20">
+            <div class="flex items-center space-x-3">
+                <!-- Mobile Menu Button -->
+                <button id="btnToggleSidebar" class="md:hidden p-2 rounded-xl text-stone-300 hover:text-amber-300 hover:bg-stone-800/60 transition-colors" aria-label="Open menu">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+
+                <!-- Center Title & Status Badge -->
+                <div class="flex items-center space-x-3">
+                    <span class="hidden sm:inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50"></span>
+                    <div>
+                        <h2 class="font-serif-title font-semibold text-sm md:text-base text-stone-100 flex items-center space-x-2">
+                            <span th:text="${appName != null ? appName : 'Aura Concierge'}">Aura Concierge</span>
+                            <span class="text-xs font-normal text-stone-400 font-sans hidden sm:inline">— Travel & Order Companion</span>
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Actions: Sound, Export, Theme, Clear -->
+            <div class="flex items-center space-x-1.5 md:space-x-2">
+                <!-- Sound Toggle Button -->
+                <button id="btnToggleSound" class="p-2 rounded-xl text-stone-300 hover:text-amber-300 hover:bg-stone-800/60 transition-colors" title="Toggle audio chime">
+                    <svg id="soundIconOn" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                    </svg>
+                    <svg id="soundIconOff" class="w-4 h-4 hidden text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15zM17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                    </svg>
+                </button>
+
+                <!-- Export Conversation Button -->
+                <button id="btnExportChat" class="p-2 rounded-xl text-stone-300 hover:text-amber-300 hover:bg-stone-800/60 transition-colors" title="Export conversation as Markdown">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                </button>
+
+                <!-- Theme Toggle Button -->
+                <button id="btnToggleTheme" class="p-2 rounded-xl text-stone-300 hover:text-amber-300 hover:bg-stone-800/60 transition-colors" title="Toggle theme (Dark/Light)">
+                    <svg id="themeIconDark" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 9H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg id="themeIconLight" class="w-4 h-4 hidden text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                </button>
+
+                <!-- Clear Chat Button -->
+                <button id="btnClearChat" class="p-2 rounded-xl text-stone-300 hover:text-red-400 hover:bg-stone-800/60 transition-colors" title="Clear current messages">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Stream Scroll Area -->
+        <div class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6 relative">
+            
+            <!-- Hero / Welcome Empty State -->
+            <div id="emptyStateHero" class="max-w-2xl mx-auto py-12 md:py-16 text-center space-y-8 animate-message">
+                
+                <!-- Glowing Emblem -->
+                <div class="inline-flex relative">
+                    <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-600 flex items-center justify-center shadow-gold-lg aura-jewel mx-auto">
+                        <svg class="w-10 h-10 text-stone-950" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L15 9L22 12L15 15L12 22L9 15L2 12L9 9L12 2Z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Editorial Headline -->
+                <div class="space-y-3">
+                    <h2 class="font-serif-title text-3xl md:text-4xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-200 to-yellow-400">
+                        Where shall we venture next?
+                    </h2>
+                    <p class="text-sm md:text-base text-stone-300 max-w-lg mx-auto leading-relaxed">
+                        I am your dedicated travel architect and order assistant. Ask about shipment statuses, cancel bookings, or craft exquisite travel itineraries.
+                    </p>
+                </div>
+
+                <!-- Curated Prompt Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-4 text-left">
+                    
+                    <!-- Prompt 1: Order Status -->
+                    <button data-prompt="What is the status of my order #1042?" class="glass-card p-4 rounded-2xl flex items-start space-x-3.5 group text-left">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 flex-shrink-0 group-hover:bg-amber-500/25 transition-colors">
+                            📦
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-amber-300 mb-1">Check Order Status</h4>
+                            <p class="text-xs text-stone-400 line-clamp-2">"What is the status of my order #1042?"</p>
+                        </div>
+                    </button>
+
+                    <!-- Prompt 2: Cancel Order -->
+                    <button data-prompt="Can you cancel order #1044 for me?" class="glass-card p-4 rounded-2xl flex items-start space-x-3.5 group text-left">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 flex-shrink-0 group-hover:bg-amber-500/25 transition-colors">
+                            🛑
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-amber-300 mb-1">Cancel an Order</h4>
+                            <p class="text-xs text-stone-400 line-clamp-2">"Can you cancel order #1044 for me?"</p>
+                        </div>
+                    </button>
+
+                    <!-- Prompt 3: Kyoto Itinerary -->
+                    <button data-prompt="Design a 4-day tranquil getaway itinerary in Kyoto with historic shrines and culinary gems." class="glass-card p-4 rounded-2xl flex items-start space-x-3.5 group text-left">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 flex-shrink-0 group-hover:bg-amber-500/25 transition-colors">
+                            🗺️
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-amber-300 mb-1">Bespoke Itinerary</h4>
+                            <p class="text-xs text-stone-400 line-clamp-2">"Design a 4-day tranquil getaway in Kyoto."</p>
+                        </div>
+                    </button>
+
+                    <!-- Prompt 4: Packing & Travel Advice -->
+                    <button data-prompt="What are 5 essential packing and etiquette tips for traveling in Italy?" class="glass-card p-4 rounded-2xl flex items-start space-x-3.5 group text-left">
+                        <div class="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-300 flex-shrink-0 group-hover:bg-amber-500/25 transition-colors">
+                            ✈️
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold text-amber-300 mb-1">Curated Travel Tips</h4>
+                            <p class="text-xs text-stone-400 line-clamp-2">"What are 5 essential tips for travel in Italy?"</p>
+                        </div>
+                    </button>
+
+                </div>
+
+            </div>
+
+            <!-- Dynamic Messages Container -->
+            <div id="chatMessagesContainer" class="max-w-3xl mx-auto space-y-4">
+                <!-- Injected via chat.js -->
+            </div>
+
+            <!-- Typing Indicator (Assistant formulating reply) -->
+            <div id="typingIndicator" class="max-w-3xl mx-auto hidden items-start space-x-3.5 mb-6 animate-message">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-yellow-600 flex items-center justify-center text-stone-950 font-bold text-xs shadow-md shadow-amber-500/20 flex-shrink-0 aura-jewel">
+                    <svg class="w-5 h-5 text-stone-950" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z" />
+                    </svg>
+                </div>
+                <div class="px-5 py-3.5 rounded-2xl rounded-tl-sm glass-panel border border-amber-500/20 text-stone-300 flex items-center space-x-2.5">
+                    <span class="text-xs text-amber-300/90 font-medium">Aura is consulting tools & crafting response</span>
+                    <div class="flex items-center space-x-1 pl-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-amber-400 typing-dot"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-amber-400 typing-dot"></div>
+                        <div class="w-1.5 h-1.5 rounded-full bg-amber-400 typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- BOTTOM FLOATING DOCK & INPUT AREA -->
+        <!-- ================================================================= -->
+        <footer class="p-3 md:p-6 z-20">
+            <div class="max-w-3xl mx-auto">
+                
+                <!-- Quick Suggestion Pills Row -->
+                <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none text-xs">
+                    <span class="text-stone-400 text-[11px] uppercase tracking-wider font-semibold whitespace-nowrap pl-1">Ask:</span>
+                    <button data-prompt="What is the status of order 1042?" class="px-3 py-1.5 rounded-full bg-stone-900/80 hover:bg-stone-800 text-stone-300 hover:text-amber-300 border border-stone-800 hover:border-amber-500/30 whitespace-nowrap transition-all">
+                        📦 Order #1042
+                    </button>
+                    <button data-prompt="What is the status of order 1043?" class="px-3 py-1.5 rounded-full bg-stone-900/80 hover:bg-stone-800 text-stone-300 hover:text-amber-300 border border-stone-800 hover:border-amber-500/30 whitespace-nowrap transition-all">
+                        📦 Order #1043
+                    </button>
+                    <button data-prompt="Can you cancel order 1044?" class="px-3 py-1.5 rounded-full bg-stone-900/80 hover:bg-stone-800 text-stone-300 hover:text-amber-300 border border-stone-800 hover:border-amber-500/30 whitespace-nowrap transition-all">
+                        🛑 Cancel #1044
+                    </button>
+                    <button data-prompt="Suggest 3 scenic walking trails in Switzerland" class="px-3 py-1.5 rounded-full bg-stone-900/80 hover:bg-stone-800 text-stone-300 hover:text-amber-300 border border-stone-800 hover:border-amber-500/30 whitespace-nowrap transition-all">
+                        🏔️ Switzerland trails
+                    </button>
+                </div>
+
+                <!-- Input Card Container -->
+                <div class="glass-panel p-2 md:p-2.5 rounded-2xl md:rounded-3xl border border-amber-500/25 shadow-2xl relative focus-within:border-amber-500/60 focus-within:shadow-gold transition-all duration-200">
+                    
+                    <div class="flex items-end space-x-2">
+                        <!-- Auto-expanding Textarea -->
+                        <textarea 
+                            id="messageInput" 
+                            rows="1" 
+                            maxlength="2000"
+                            placeholder="Message Aura... (Ask about your orders, travel ideas, or anything)"
+                            class="flex-1 bg-transparent px-3.5 py-2.5 text-sm md:text-base text-stone-100 placeholder-stone-400 focus:outline-none resize-none leading-relaxed max-h-40 overflow-y-auto"
+                        ></textarea>
+
+                        <!-- Send Button -->
+                        <button 
+                            id="sendBtn" 
+                            class="w-10 h-10 md:w-11 md:h-11 rounded-xl md:rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-stone-950 flex items-center justify-center font-bold shadow-md shadow-amber-500/20 hover:shadow-gold transition-all duration-200 active:scale-95 flex-shrink-0"
+                            aria-label="Send message"
+                        >
+                            <svg class="w-5 h-5 -rotate-45 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Input Footer Utilities -->
+                    <div class="flex items-center justify-between px-3 pt-1.5 pb-0.5 text-[11px] text-stone-400 border-t border-stone-800/40 mt-1">
+                        <span class="hidden sm:inline">Press <kbd class="px-1.5 py-0.5 rounded bg-stone-800 text-stone-300 font-mono text-[10px]">Enter ↵</kbd> to send, <kbd class="px-1.5 py-0.5 rounded bg-stone-800 text-stone-300 font-mono text-[10px]">Shift + Enter</kbd> for newline</span>
+                        <span class="sm:hidden">Tap send to chat</span>
+                        <span id="charCounter" class="font-mono text-stone-400">0 / 2000</span>
+                    </div>
+
+                </div>
+
+                <div class="text-center pt-2 text-[10px] text-stone-400">
+                    Aura connects directly with <code class="text-amber-400/80">/chat</code> • Powered by Spring AI & Gemini 3.8 Flash
+                </div>
+
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Client-side Chat Logic -->
+    <script th:src="@{/js/chat.js}"></script>
+</body>
+</html>

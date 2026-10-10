@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+
+**/target/
+*.class
+
+.idea/
+.vscode/
+
+*.log
+
+application.properties
+application.yml
