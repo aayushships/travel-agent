@@ -291,7 +291,7 @@
                             <div class="flex items-center justify-between border-t border-stone-700/40 mt-3 pt-2 text-[11px] text-stone-400">
                                 <span class="flex items-center space-x-1.5 text-stone-400">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                    <span>Gemini 3.8 Flash</span>
+                                    <span>Gemini AI</span>
                                 </span>
                                 <div class="flex items-center space-x-2">
                                     <button class="btn-read-aloud flex items-center space-x-1 hover:text-amber-300 transition-colors p-1 rounded" title="Read aloud">
@@ -428,6 +428,22 @@
     // =========================================================================
     // API Interaction: Send Message to /chat
     // =========================================================================
+    // The backend accepts one query string, so include recent turns for follow-ups.
+    // The user's visible message remains unchanged in the UI.
+    function buildPromptWithContext(session, currentQuery) {
+        const previousMessages = (session.messages || []).slice(0, -1).slice(-10);
+        if (previousMessages.length === 0) return currentQuery;
+
+        const history = previousMessages.map(message => {
+            const speaker = message.role === 'user' ? 'User' : 'Aura';
+            return speaker + ': ' + message.content;
+        }).join('\n');
+
+        return 'Continue the conversation using the context below. Answer the latest user message directly. ' +
+            'Do not repeat questions that were already answered. Treat the latest user message as the current request.\n\n' +
+            'Recent conversation:\n' + history + '\n\nLatest user message:\n' + currentQuery;
+    }
+
     async function sendMessage(text) {
         if (!text || !text.trim() || isGenerating) return;
 
@@ -466,27 +482,32 @@
         setGeneratingState(true);
 
         try {
-            // First attempt: POST /chat with JSON
-            const res = await fetch('/chat', {
+            // Same-origin by default; set window.AURA_API_BASE_URL for a separately hosted frontend.
+            const apiBase = (window.AURA_API_BASE_URL || '').replace(/\/$/, '');
+            const chatUrl = apiBase + '/chat';
+            const promptForBackend = buildPromptWithContext(session, query);
+
+            // POST the current request plus recent conversation context.
+            const res = await fetch(chatUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json, text/plain, */*'
                 },
-                body: JSON.stringify({ query: query })
+                body: JSON.stringify({ query: promptForBackend })
             });
 
             if (!res.ok) {
                 // If 405/415 or error, try fallback POST with text/plain
-                const fallbackRes = await fetch('/chat', {
+                const fallbackRes = await fetch(chatUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain' },
-                    body: query
+                    body: promptForBackend
                 });
 
                 if (!fallbackRes.ok) {
                     // Try GET /chat?query=...
-                    const getRes = await fetch('/chat?query=' + encodeURIComponent(query));
+                    const getRes = await fetch(chatUrl + '?query=' + encodeURIComponent(promptForBackend));
                     if (!getRes.ok) {
                         const errText = await getRes.text();
                         throw new Error(`Server returned error ${getRes.status}: ${errText || 'Request failed'}`);
